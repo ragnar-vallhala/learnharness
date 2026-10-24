@@ -52,6 +52,16 @@ Add your provider API key and choose your models, then start a session with what
 
 All three platforms support in-app updates.
 
+## Use Claude Code as the teacher (no API key)
+
+Run the app with `LH_EXTERNAL_AGENT=1 npm run dev`, then connect Claude Code:
+
+```
+claude mcp add --transport http learnharness http://localhost:3000/api/mcp
+```
+
+Claude Code (on your Claude plan) then probes, plans and teaches through the app's own tools, and extracts sessions into your knowledge graph. See [docs/external-agent.md](docs/external-agent.md).
+
 ## Your keys, your data
 
 - **Your keys and models.** No LearnHarness subscription or markup. You pay your providers for usage; a live cost meter shows model costs.

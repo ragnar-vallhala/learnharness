@@ -8,7 +8,7 @@ import { DictationBar, joinDictation, useDictation } from "@/components/dictatio
 import { useFieldCycle } from "@/components/field-cycle";
 import { SidebarToggle } from "@/components/sidebar";
 import { SetupDialog } from "@/components/setup-dialog";
-import { useStrongKeyless, useZeroKeys, ZeroKeysPill } from "@/components/setup-cta";
+import { useExternalAgentMode, useStrongKeyless, useZeroKeys as useZeroKeysRaw, ZeroKeysPill } from "@/components/setup-cta";
 import { StatsBar } from "@/components/stats-bar";
 import { ChainTableOverlay } from "@/components/chain-table.tsx";
 import { ComposerActions, NodePickerControl } from "@/components/composer-actions";
@@ -278,17 +278,19 @@ export function NewSession({ initialConfigured, mode = "teach" }: { initialConfi
 	const [configured, setConfigured] = useState(initialConfigured);
 	// The zero-keys truth (zero-keys wave): no provider key = the pill
 	// takes precedence over the models CTA (keys come first in the chain).
-	const zeroKeys = useZeroKeys();
+	// External-agent mode: a connected MCP agent teaches — no slots/keys needed here.
+	const externalAgent = useExternalAgentMode().enabled;
+	const zeroKeys = useZeroKeysRaw() && !externalAgent;
 	// The strong slot's keyless truth (pre-send key guards, owner interlude
 	// 2026-09-25): keys may exist generally while the STRONG slot's pinned
 	// provider has none — the same skip-everything treatment on send.
-	const strongKeyless = useStrongKeyless();
+	const strongKeyless = useStrongKeyless() && !externalAgent;
 	const [setupOpen, setSetupOpen] = useState(false);
 
 	const send = useCallback(() => {
 		const draft = textRef.current.trim();
 		if (!draft || busy) return;
-		if (!configured) {
+		if (!configured && !externalAgent) {
 			setSetupOpen(true);
 			return;
 		}
@@ -308,7 +310,7 @@ export function NewSession({ initialConfigured, mode = "teach" }: { initialConfi
 				else setBusy(false);
 			})
 			.catch(() => setBusy(false));
-	}, [busy, router, configured, zeroKeys, strongKeyless]);
+	}, [busy, router, configured, zeroKeys, strongKeyless, externalAgent]);
 
 	return (
 		<>
@@ -350,7 +352,7 @@ export function NewSession({ initialConfigured, mode = "teach" }: { initialConfi
 					zeroKeys ? (
 						<ZeroKeysPill inline onOpen={() => setSetupOpen(true)} />
 					) : (
-						!configured && (
+						!configured && !externalAgent && (
 							<button
 								type="button"
 								data-testid="setup-cta"

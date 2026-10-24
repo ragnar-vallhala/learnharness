@@ -7,7 +7,7 @@ import { GraphView } from "@/components/graph-view";
 import { MinimalHome } from "@/components/minimal-home";
 import { SetupDialog } from "@/components/setup-dialog";
 import { ComposerActions, NodePickerControl } from "@/components/composer-actions";
-import { useStrongKeyless, useZeroKeys, ZeroKeysPill } from "@/components/setup-cta";
+import { useExternalAgentMode, useStrongKeyless, useZeroKeys as useZeroKeysRaw, ZeroKeysPill } from "@/components/setup-cta";
 import { DictationBar, joinDictation, useDictation } from "@/components/dictation";
 import { useFieldCycle } from "@/components/field-cycle";
 import { SidebarToggle } from "@/components/sidebar";
@@ -45,11 +45,13 @@ export function Home({
 	const [configured, setConfigured] = useState(initialConfigured);
 	// The zero-keys truth (zero-keys wave): no provider key = the pill
 	// takes precedence over the models CTA (keys come first in the chain).
-	const zeroKeys = useZeroKeys();
+	// External-agent mode: a connected MCP agent teaches — no slots/keys needed here.
+	const externalAgent = useExternalAgentMode().enabled;
+	const zeroKeys = useZeroKeysRaw() && !externalAgent;
 	// The strong slot's keyless truth (pre-send key guards, owner interlude
 	// 2026-09-25): keys may exist generally while the STRONG slot's pinned
 	// provider has none — the same skip-everything treatment on send.
-	const strongKeyless = useStrongKeyless();
+	const strongKeyless = useStrongKeyless() && !externalAgent;
 	const [setupOpen, setSetupOpen] = useState(false);
 	// Voice dictation (STT wave, 2026-09-17): finals append at the end of the
 	// topic draft; the strip lives in the stats bar's middle slot.
@@ -115,7 +117,7 @@ export function Home({
 		if (!t || busy) return;
 		// Unconfigured: the send INTERCEPTS into the setup flow (the draft
 		// stays in the textarea; the learner sends it after Save).
-		if (!configured) {
+		if (!configured && !externalAgent) {
 			setSetupOpen(true);
 			return;
 		}
@@ -229,7 +231,7 @@ export function Home({
 						setup={zeroKeys ? (
 							<ZeroKeysPill inline onOpen={() => setSetupOpen(true)} />
 						) : (
-							!configured && (
+							!configured && !externalAgent && (
 								<button
 									type="button"
 									data-testid="setup-cta"

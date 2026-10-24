@@ -15,6 +15,7 @@
  * its own save), the same re-read pattern chat.tsx uses for "models".
  */
 
+import { useEffect, useState } from "react";
 import type { AuthKeyStatus } from "@/src/core";
 import { classifyKeys, type ProviderKeyInfo } from "@/components/settings/keys-section";
 import { useModelCatalog } from "@/components/model-picker";
@@ -79,4 +80,30 @@ export function strongKeyless(catalog: ModelCatalogResponse | undefined): boolea
 export function useStrongKeyless(): boolean {
 	const { catalog } = useModelCatalog();
 	return strongKeyless(catalog);
+}
+
+/** External-agent mode (src/server/external-agent.ts): when the server runs
+ *  with LH_EXTERNAL_AGENT=1, sessions are driven by a connected MCP agent
+ *  (e.g. Claude Code) and need no model slot or provider key here — the
+ *  setup guards and CTAs stand down. Truth: GET /api/agent. False until
+ *  the read lands (the guards then behave exactly as before). */
+export function useExternalAgentMode(): { enabled: boolean; connected: boolean } {
+	const [status, setStatus] = useState({ enabled: false, connected: false });
+	useEffect(() => {
+		let cancelled = false;
+		const read = () =>
+			fetch("/api/agent")
+				.then((r) => (r.ok ? r.json() : null))
+				.then((body: { enabled?: boolean; connected?: boolean } | null) => {
+					if (!cancelled && body) setStatus({ enabled: body.enabled === true, connected: body.connected === true });
+				})
+				.catch(() => {});
+		read();
+		const timer = setInterval(read, 15_000);
+		return () => {
+			cancelled = true;
+			clearInterval(timer);
+		};
+	}, []);
+	return status;
 }

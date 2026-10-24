@@ -58,6 +58,7 @@ import {
 	type TurnInput,
 } from "../core/input-events.ts";
 import { steerDelivered } from "../core/contracts.ts";
+import { handleExternalInput, isExternalChat } from "./external-agent.ts";
 import type {CallUsage, SteerMessage} from "../core/contracts.ts";
 
 /**
@@ -181,6 +182,12 @@ export async function handleChatInput(
 	if (!record) {
 		return Response.json({ error: "Unknown chat" }, { status: 404 });
 	}
+
+	// THE EXTERNAL-AGENT BRANCH (external-agent.ts): a chat driven by an
+	// MCP client (e.g. Claude Code) runs no model here — the input lands in
+	// the record exactly as below, and the chat is busy until the connected
+	// agent replies. BEFORE every model/key gate: such a chat needs neither.
+	if (isExternalChat(record)) return handleExternalInput(record, input);
 
 	// THE UNIVERSAL TURN GATE (BYOK, owner, 2026-09-22): a turn needs the
 	// CONVERSATION chain — the chat's own model override over the strong

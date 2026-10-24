@@ -5,7 +5,7 @@ import { useChatSession } from "@/components/session";
 import { visibleQueuedSteers } from "@/components/session-core";
 import { SetupDialog } from "@/components/setup-dialog";
 import { Hint } from "@/components/ui/hint";
-import { useZeroKeys, ZeroKeysPill } from "@/components/setup-cta";
+import { useExternalAgentMode, useZeroKeys as useZeroKeysRaw, ZeroKeysPill } from "@/components/setup-cta";
 import { useStickToBottomContext, type StickToBottomContext } from "use-stick-to-bottom";
 import {
 	Conversation,
@@ -559,7 +559,9 @@ export function Chat({
 	// The zero-keys truth (zero-keys wave): no provider key = the pill
 	// takes precedence over the models CTA (keys come first in the chain).
 	// Reads once on mount, re-reads on the "keys" signal.
-	const zeroKeys = useZeroKeys();
+	// External-agent mode: a connected MCP agent teaches — no slots/keys needed here.
+	const externalAgent = useExternalAgentMode().enabled;
+	const zeroKeys = useZeroKeysRaw() && !externalAgent;
 	// Cross-surface freshness (fix wave): another surface's models write —
 	// setup save, composer pick, a settings write — re-reads the record so
 	// the setup CTA appears/disappears live (it used to lag until reload).
@@ -1617,7 +1619,7 @@ export function Chat({
 						zeroKeys ? (
 							<ZeroKeysPill onOpen={() => setSetupOpen(true)} />
 						) : (
-							!configured && (
+							!configured && !externalAgent && (
 								<div className="pointer-events-auto mb-2 flex justify-center">
 									<button
 										type="button"
